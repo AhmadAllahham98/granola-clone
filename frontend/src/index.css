@@ -1,0 +1,40 @@
+/*
+  Tailwind v4 — single import replaces the old @tailwind base/components/utilities directives.
+  Everything below customises the theme using the @theme block.
+  These become Tailwind utilities you can use like: bg-surface, text-accent, etc.
+*/
+@import "tailwindcss";
+
+@theme {
+  /* ── Colours ─────────────────────────────────────────────────────────────── */
+  --color-bg:           #1a1a1a;
+  --color-surface:      #242424;
+  --color-surface-alt:  #2e2e2e;
+  --color-border:       #3a3a3a;
+  --color-text:         #e8e8e8;
+  --color-muted:        #888888;
+  --color-accent:       #a78bfa;
+  --color-accent-hover: #8b5cf6;
+  --color-danger:       #f87171;
+
+  /* ── Typography ──────────────────────────────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ── Border radius ───────────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* ── Base reset ──────────────────────────────────────────────────────────── */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

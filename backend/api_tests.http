@@ -1,0 +1,83 @@
+### -------------------------
+### HEALTH & UTILS
+### -------------------------
+
+### Health Check (Public)
+GET http://localhost:3000/health
+
+### Trigger Error (To test your error handler)
+GET http://localhost:3000/crash
+x-api-key: granola-123
+
+### Trigger 404 Error
+GET http://localhost:3000/this-route-does-not-exist
+x-api-key: granola-123
+
+### CORS Preflight (Checks if CORS is working)
+OPTIONS http://localhost:3000/api/notes
+Origin: http://localhost:5173
+Access-Control-Request-Method: GET
+
+
+### -------------------------
+### NOTES (CRUD API)
+### NOTE: All these require 'x-api-key: granola-123'
+### -------------------------
+
+### 1. Get All Notes
+GET http://localhost:3000/api/notes
+x-api-key: granola-123
+
+### 1b. Get All Notes (With filters like ownerId)
+GET http://localhost:3000/api/notes?ownerId=d0836797-2640-4b89-81fa-a430e2c74c81
+x-api-key: granola-123
+
+### 2. Get Note By ID (Replace the ID with a real DB UUID)
+GET http://localhost:3000/api/notes/9186beab-2e9a-438e-957f-315c7a800c76
+x-api-key: granola-123
+
+### 3. Create a Note 
+### IMPORTANT: ownerId MUST be a valid User UUID in your Postgres DB!
+### (You may need to manually insert a User in TablePlus/Supabase first to grab an ID)
+POST http://localhost:3000/api/notes
+Content-Type: application/json
+x-api-key: granola-123
+
+{
+  "ownerId": "d0836797-2640-4b89-81fa-a430e2c74c81",
+  "title": "My Prisma Testing Note",
+  "content": "This is successfully writing to the Postgres database!"
+}
+
+### 4. Create a Note (Invalid - Missing ownerId)
+POST http://localhost:3000/api/notes
+Content-Type: application/json
+x-api-key: granola-123
+
+{
+  "title": "Invalid Note",
+  "content": "I forgot the owner id"
+}
+
+### 5. Update a Note (Partial Update / PATCH)
+PATCH http://localhost:3000/api/notes/f84d82b0-2911-467b-a619-3b46544ae8dd
+Content-Type: application/json
+x-api-key: granola-123
+
+{
+  "title": "Updated Title via PATCH!",
+  "content": "Old content was replaced."
+}
+
+### 6. Delete a Note
+DELETE http://localhost:3000/api/notes/f84d82b0-2911-467b-a619-3b46544ae8dd
+x-api-key: granola-123
+
+
+### -------------------------
+### OTHER ENDPOINTS
+### -------------------------
+
+### Get Transcript
+GET http://localhost:3000/transcript/50
+x-api-key: granola-123

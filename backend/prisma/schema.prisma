@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model ActionItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  noteId      String   @map("note_id") @db.Uuid
+  description String
+  isCompleted Boolean? @default(false) @map("is_completed")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@map("action_items")
+}
+
+model Note {
+  id          String       @id @default(uuid()) @db.Uuid
+  ownerId     String       @map("owner_id") @db.Uuid
+  templateId  String?      @map("template_id") @db.Uuid
+  title       String       @default("Untitled Meeting") @db.VarChar(255)
+  content     String?
+  aiSummary   String?      @map("ai_summary")
+  status      String?      @default("in_progress") @db.VarChar(50)
+  meetingDate DateTime?    @default(now()) @map("meeting_date") @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  actionItems ActionItem[]
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  template    Template?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  transcripts Transcript[]
+
+  @@index([ownerId])
+  @@map("notes")
+}
+
+model Template {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  name           String   @db.VarChar(255)
+  defaultContent String?  @map("default_content")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  notes          Note[]
+  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("templates")
+}
+
+model Transcript {
+  id          String   @id @default(uuid()) @db.Uuid
+  noteId      String   @map("note_id") @db.Uuid
+  speakerName String?  @default("Speaker 1") @map("speaker_name") @db.VarChar(100)
+  spokenText  String   @map("spoken_text")
+  startTime   Decimal? @map("start_time") @db.Decimal(10, 3)
+  endTime     Decimal? @map("end_time") @db.Decimal(10, 3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@map("transcripts")
+}
+
+model User {
+  id        String     @id @default(uuid()) @db.Uuid
+  email     String     @unique @db.VarChar(255)
+  password  String     @db.VarChar(255)
+  fullName  String?    @map("full_name") @db.VarChar(255)
+  avatarUrl String?    @map("avatar_url")
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  notes     Note[]
+  templates Template[]
+
+  @@map("users")
+}
