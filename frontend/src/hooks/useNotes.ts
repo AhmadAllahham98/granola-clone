@@ -52,8 +52,7 @@ export function useUpdateNote(id: string) {
   return useMutation({
     mutationFn: (data: Partial<Pick<Note, 'title' | 'content'>>) => updateNote(id, data),
     onSuccess: () => {
-      // Update both the list and the specific note detail cache
-      queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) })
+      // Update both the lists and the specific note detail cache
       queryClient.invalidateQueries({ queryKey: noteKeys.all })
     },
   })

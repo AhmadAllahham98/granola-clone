@@ -1,68 +1,89 @@
 ### -------------------------
+### GRANOLA LOCAL API TESTS
+### -------------------------
+
+# Instructions:
+# 1. Use an extension like "REST Client" in VS Code to run these requests.
+# 2. Run the Auth tests first to get a JWT token.
+# 3. Paste the JWT token into the @token variable below.
+
+@baseUrl = http://localhost:3000
+@token = RUN USER LOGIN AND GET AND PASTE TOKEN HERE FROM RESPONSE
+
+### -------------------------
+### AUTHENTICATION API
+### -------------------------
+
+### 1. Register a new user
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "securepassword",
+  "fullName": "Test User"
+}
+
+### 2. Login
+### -> Copy the token from the response and paste it into @token above!
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "securepassword"
+}
+
+
+### -------------------------
 ### HEALTH & UTILS
 ### -------------------------
 
 ### Health Check (Public)
-GET http://localhost:3000/health
-
-### Trigger Error (To test your error handler)
-GET http://localhost:3000/crash
-x-api-key: granola-123
-
-### Trigger 404 Error
-GET http://localhost:3000/this-route-does-not-exist
-x-api-key: granola-123
+GET {{baseUrl}}/health
 
 ### CORS Preflight (Checks if CORS is working)
-OPTIONS http://localhost:3000/api/notes
+OPTIONS {{baseUrl}}/api/notes
 Origin: http://localhost:5173
 Access-Control-Request-Method: GET
 
 
 ### -------------------------
 ### NOTES (CRUD API)
-### NOTE: All these require 'x-api-key: granola-123'
+### NOTE: All these require the Bearer @token set above
 ### -------------------------
 
 ### 1. Get All Notes
-GET http://localhost:3000/api/notes
-x-api-key: granola-123
-
-### 1b. Get All Notes (With filters like ownerId)
-GET http://localhost:3000/api/notes?ownerId=d0836797-2640-4b89-81fa-a430e2c74c81
-x-api-key: granola-123
-
-### 2. Get Note By ID (Replace the ID with a real DB UUID)
-GET http://localhost:3000/api/notes/9186beab-2e9a-438e-957f-315c7a800c76
-x-api-key: granola-123
+GET {{baseUrl}}/api/notes
+Authorization: Bearer {{token}}
 
 ### 3. Create a Note 
-### IMPORTANT: ownerId MUST be a valid User UUID in your Postgres DB!
-### (You may need to manually insert a User in TablePlus/Supabase first to grab an ID)
-POST http://localhost:3000/api/notes
+POST {{baseUrl}}/api/notes
+Authorization: Bearer {{token}}
 Content-Type: application/json
-x-api-key: granola-123
 
 {
-  "ownerId": "d0836797-2640-4b89-81fa-a430e2c74c81",
-  "title": "My Prisma Testing Note",
-  "content": "This is successfully writing to the Postgres database!"
+  "title": "My New Meeting Note",
+  "content": "This is successfully writing to the Postgres database for this authenticated user!"
 }
 
-### 4. Create a Note (Invalid - Missing ownerId)
-POST http://localhost:3000/api/notes
+### 4. Create a Note (Invalid - Wrong Data Type)
+### Title has a built-in default, so omitting it is valid. 
+### To trigger a Zod error, we must send the WRONG data type.
+POST {{baseUrl}}/api/notes
+Authorization: Bearer {{token}}
 Content-Type: application/json
-x-api-key: granola-123
 
 {
-  "title": "Invalid Note",
-  "content": "I forgot the owner id"
+  "title": 123,
+  "content": "A number cannot be a title!"
 }
 
 ### 5. Update a Note (Partial Update / PATCH)
-PATCH http://localhost:3000/api/notes/f84d82b0-2911-467b-a619-3b46544ae8dd
+### -> REPLACE :noteId with a real note ID from the Get All Notes response
+PATCH {{baseUrl}}/api/notes/:note-id
+Authorization: Bearer {{token}}
 Content-Type: application/json
-x-api-key: granola-123
 
 {
   "title": "Updated Title via PATCH!",
@@ -70,14 +91,6 @@ x-api-key: granola-123
 }
 
 ### 6. Delete a Note
-DELETE http://localhost:3000/api/notes/f84d82b0-2911-467b-a619-3b46544ae8dd
-x-api-key: granola-123
-
-
-### -------------------------
-### OTHER ENDPOINTS
-### -------------------------
-
-### Get Transcript
-GET http://localhost:3000/transcript/50
-x-api-key: granola-123
+### -> REPLACE :noteId with a real note ID from the Get All Notes response
+DELETE {{baseUrl}}/api/notes/:noteId
+Authorization: Bearer {{token}}

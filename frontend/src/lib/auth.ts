@@ -13,13 +13,13 @@ export type RegisterInput = {
   password: string
 }
 
-// ─── POST /auth/login ─────────────────────────────────────────────────────────
+// ─── POST /api/auth/login ─────────────────────────────────────────────────────────
 // On success, store the returned token in localStorage.
 export function login(data: LoginInput): Promise<AuthResponse> {
-  return apiFetch<AuthResponse>('/auth/login', { method: 'POST', json: data })
+  return apiFetch<AuthResponse>('/api/auth/login', { method: 'POST', json: data })
 }
 
-// ─── POST /auth/register ──────────────────────────────────────────────────────
+// ─── POST /api/auth/register ──────────────────────────────────────────────────────
 export function register(data: RegisterInput): Promise<AuthResponse> {
-  return apiFetch<AuthResponse>('/auth/register', { method: 'POST', json: data })
+  return apiFetch<AuthResponse>('/api/auth/register', { method: 'POST', json: data })
 }

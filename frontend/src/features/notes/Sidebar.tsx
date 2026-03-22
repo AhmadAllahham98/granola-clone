@@ -8,24 +8,40 @@
 //
 // TODO (Day 11): Wire up useCreateNote() for the New Note button.
 
-import { useState } from 'react'
-import { useNotes } from '../../hooks/useNotes.ts'
-import NoteList from './NoteList.tsx'
+import { useState } from "react";
+import { useNotes } from "../../hooks/useNotes.ts";
+import NoteList from "./NoteList.tsx";
+import { useCreateNote } from "../../hooks/useNotes.ts";
+import { useNavigate } from "react-router-dom";
+import type { Note } from "../../types/index.ts";
 
 function Sidebar() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   // useNotes fetches all notes — passing `search` filters server-side
-  const { data: notes, isLoading, isError } = useNotes(search)
+  const { data: notes, isLoading, isError } = useNotes(search);
+
+  const { mutate: createNote } = useCreateNote();
 
   // TODO: Replace console.log with useCreateNote mutation + navigate to new note id
   function handleNewNote() {
-    console.log('TODO: create new note')
+    createNote(
+      { title: "test", content: "test" },
+      {
+        onSuccess: (data) => {
+          const noteId = (data as Note).id;
+          navigate(`/notes/${noteId}`);
+        },
+        onError: (error) => {
+          console.error("error creating note", error);
+        },
+      },
+    );
   }
 
   return (
     <aside className="flex flex-col h-screen bg-surface border-r border-border overflow-hidden">
-
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <span className="text-xs font-semibold text-muted uppercase tracking-widest">
@@ -53,10 +69,12 @@ function Sidebar() {
 
       {/* Note list */}
       {isLoading && <p className="px-4 py-3 text-sm text-muted">Loading...</p>}
-      {isError   && <p className="px-4 py-3 text-sm text-danger">Failed to load notes.</p>}
-      {notes     && <NoteList notes={notes} />}
+      {isError && (
+        <p className="px-4 py-3 text-sm text-danger">Failed to load notes.</p>
+      )}
+      {notes && <NoteList notes={notes} />}
     </aside>
-  )
+  );
 }
 
-export default Sidebar
+export default Sidebar;

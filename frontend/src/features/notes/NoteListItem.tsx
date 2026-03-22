@@ -4,6 +4,7 @@
 
 import { Link, useParams } from 'react-router-dom'
 import { clsx } from 'clsx'
+import { motion } from 'motion/react'
 import type { Note } from '../../types/index.ts'
 
 type Props = {
@@ -24,7 +25,12 @@ function NoteListItem({ note }: Props) {
   const isActive = activeId === note.id
 
   return (
-    <li>
+    <motion.li
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      layout
+    >
       <Link
         to={`/notes/${note.id}`}
         className={clsx(
@@ -41,7 +47,7 @@ function NoteListItem({ note }: Props) {
           <span className="text-[11px] text-muted truncate">{getPreview(note.content)}</span>
         </span>
       </Link>
-    </li>
+    </motion.li>
   )
 }
 

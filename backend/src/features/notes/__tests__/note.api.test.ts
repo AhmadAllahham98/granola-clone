@@ -38,7 +38,7 @@ describe("Notes API Integration Tests", () => {
         meta: { page: 1, limit: 10, totalCount: 1, totalPages: 1 },
         data: [
           {
-            id: "note-1",
+            id: "d0836797-2640-4b89-81fa-a430e2c74c81",
             title: "Test Note",
             content: "Hello World",
             ownerId: mockUserId,
@@ -64,10 +64,11 @@ describe("Notes API Integration Tests", () => {
 
   describe("POST /api/notes", () => {
     it("should create a new note", async () => {
-      const mockInput = { ownerId: mockUserId, title: "New Note", content: "Content here" };
+      const mockInput = { title: "New Note", content: "Content here" };
       const mockCreatedNote = {
-        id: "note-2",
+        id: "f84d82b0-2911-467b-a619-3b46544ae8dd",
         ...mockInput,
+        ownerId: mockUserId,
         isArchived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -89,24 +90,22 @@ describe("Notes API Integration Tests", () => {
     });
 
     it("should return 400 if validation fails", async () => {
-      // Missing ownerId should trigger Zod validation error
-      const invalidInput = { title: "No Owner Note" };
+      // Trigger zod validation by passing an invalid title type
+      const invalidInput = { title: 12345 };
 
       const response = await request(app)
         .post("/api/notes")
         .set("Authorization", authHeader)
         .send(invalidInput);
 
-      // We expect the global error handler to format Zod errors or throw 500 depending on setup
-      // Assuming global handler returns a 500 or 400 based on error type
-      expect(response.status).toBeGreaterThanOrEqual(400); 
+      expect(response.status).toBe(400); 
     });
   });
 
   describe("GET /api/notes/:id", () => {
     it("should return a specific note by ID", async () => {
       const mockNote = {
-        id: "note-1",
+        id: "d0836797-2640-4b89-81fa-a430e2c74c81",
         title: "Test Note",
         content: "Hello World",
         ownerId: mockUserId,
@@ -118,20 +117,20 @@ describe("Notes API Integration Tests", () => {
       vi.mocked(NoteService.getNoteById).mockResolvedValue(mockNote as any);
 
       const response = await request(app)
-        .get("/api/notes/note-1")
+        .get("/api/notes/d0836797-2640-4b89-81fa-a430e2c74c81")
         .set("Authorization", authHeader);
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe("success");
       expect(response.body.data.title).toBe("Test Note");
-      expect(NoteService.getNoteById).toHaveBeenCalledWith("note-1");
+      expect(NoteService.getNoteById).toHaveBeenCalledWith("d0836797-2640-4b89-81fa-a430e2c74c81");
     });
 
     it("should return 404 if note is not found", async () => {
       vi.mocked(NoteService.getNoteById).mockResolvedValue(null as any);
 
       const response = await request(app)
-        .get("/api/notes/invalid-note-id")
+        .get("/api/notes/00000000-0000-0000-0000-000000000000")
         .set("Authorization", authHeader);
 
       expect(response.status).toBe(404);
@@ -142,7 +141,7 @@ describe("Notes API Integration Tests", () => {
   describe("PATCH /api/notes/:id", () => {
     it("should update an existing note", async () => {
       const mockUpdatedNote = {
-        id: "note-1",
+        id: "d0836797-2640-4b89-81fa-a430e2c74c81",
         title: "Updated Title",
         content: "New content",
         ownerId: mockUserId,
@@ -154,28 +153,28 @@ describe("Notes API Integration Tests", () => {
       vi.mocked(NoteService.updateNote).mockResolvedValue(mockUpdatedNote as any);
 
       const response = await request(app)
-        .patch("/api/notes/note-1")
+        .patch("/api/notes/d0836797-2640-4b89-81fa-a430e2c74c81")
         .set("Authorization", authHeader)
         .send({ title: "Updated Title" });
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe("success");
       expect(response.body.data.title).toBe("Updated Title");
-      expect(NoteService.updateNote).toHaveBeenCalledWith("note-1", expect.objectContaining({ title: "Updated Title" }));
+      expect(NoteService.updateNote).toHaveBeenCalledWith("d0836797-2640-4b89-81fa-a430e2c74c81", expect.objectContaining({ title: "Updated Title" }));
     });
   });
 
   describe("DELETE /api/notes/:id", () => {
     it("should delete a note and return 200", async () => {
-      vi.mocked(NoteService.deleteNote).mockResolvedValue({ id: "note-1" } as any);
+      vi.mocked(NoteService.deleteNote).mockResolvedValue({ id: "d0836797-2640-4b89-81fa-a430e2c74c81" } as any);
 
       const response = await request(app)
-        .delete("/api/notes/note-1")
+        .delete("/api/notes/d0836797-2640-4b89-81fa-a430e2c74c81")
         .set("Authorization", authHeader);
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe("success");
-      expect(NoteService.deleteNote).toHaveBeenCalledWith("note-1");
+      expect(NoteService.deleteNote).toHaveBeenCalledWith("d0836797-2640-4b89-81fa-a430e2c74c81");
     });
   });
 });

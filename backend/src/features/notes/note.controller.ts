@@ -14,7 +14,6 @@ const GetNotesQuerySchema = z.object({
 });
 
 const CreateNoteSchema = z.object({
-  ownerId: z.string(),
   title: z.string().optional().default("Untitled Meeting"),
   content: z.string().optional(),
 });
@@ -25,6 +24,8 @@ const UpdateNoteSchema = z.object({
   isArchived: z.boolean().optional(),
 });
 
+const UuidSchema = z.string().uuid("A valid UUID noteId is strictly required");
+
 export const createNote = async (
   req: Request,
   res: Response,
@@ -32,10 +33,22 @@ export const createNote = async (
 ) => {
   try {
     // 1. Validate data from req.body
-    const validNote = CreateNoteSchema.parse(req.body);
+    const validBody = CreateNoteSchema.parse(req.body);
+    
+    // IMPORTANT: Get ownerId securely from the JWT token via middleware!
+    const ownerId = (req as any).userId;
+    
+    if (!ownerId) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const validNote = {
+      ...validBody,
+      ownerId
+    };
 
     // 2. Pass the clean data to the Service layer
-    const newNote = await NoteService.createNote(validNote);
+    const newNote = await NoteService.createNote(validNote as any);
 
     // 3. Return the new database record with a 201 Created status
     res.status(201).json({
@@ -77,12 +90,8 @@ export const getNoteById = async (
   next: NextFunction,
 ) => {
   try {
-    // 1. Extract the note ID from req.params.id
-    const noteId = req.params.id;
-
-    if (!noteId || typeof noteId !== "string") {
-      throw new ApiError(400, "A valid string noteId is strictly required");
-    }
+    // 1. Extract and validate the note ID from req.params.id
+    const noteId = UuidSchema.parse(req.params.id);
 
     // 2. Use await NoteService.getNoteById(...) to get the specific note
     const note = await NoteService.getNoteById(noteId);
@@ -108,12 +117,8 @@ export const updateNote = async (
   next: NextFunction,
 ) => {
   try {
-    // 1. Extract the note ID from req.params.id
-    const noteId = req.params.id;
-
-    if (!noteId || typeof noteId !== "string") {
-      throw new ApiError(400, "A valid string noteId is strictly required");
-    }
+    // 1. Extract and validate the note ID from req.params.id
+    const noteId = UuidSchema.parse(req.params.id);
 
     // 2. Validate the updated fields from req.body
     const updateData = UpdateNoteSchema.parse(req.body);
@@ -137,12 +142,8 @@ export const deleteNote = async (
   next: NextFunction,
 ) => {
   try {
-    // 1. Extract the note ID from req.params.id
-    const noteId = req.params.id;
-
-    if (!noteId || typeof noteId !== "string") {
-      throw new ApiError(400, "A valid string noteId is strictly required");
-    }
+    // 1. Extract and validate the note ID from req.params.id
+    const noteId = UuidSchema.parse(req.params.id);
 
     // 2. Use await NoteService.deleteNote(...) to remove it from Postgres
     await NoteService.deleteNote(noteId);

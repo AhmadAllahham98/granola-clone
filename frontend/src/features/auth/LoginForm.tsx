@@ -4,20 +4,34 @@
 //
 // TODO (Day 11): Wire up the useMutation call to lib/auth.ts `login()`.
 
-import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../../lib/auth";
+import { useMutation } from "@tanstack/react-query";
+import { useAuth } from "../../context/AuthContext";
 
 function LoginForm() {
-  const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const navigate = useNavigate();
+  const auth = useAuth();
 
-  // TODO: Replace with useMutation calling login() from lib/auth.ts,
-  //       then call setAuth() from useAuth() context hook
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    console.log('login', { email, password })
-    navigate('/notes')
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: (data) => {
+      console.log("Logged in successfully!");
+      auth.setAuth(data.user, data.token);
+      navigate("/notes");
+    },
+    onError(error) {
+      console.error("Login failed", error);
+    },
+  });
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    loginMutation.mutate({ email, password });
   }
 
   return (
@@ -52,12 +66,17 @@ function LoginForm() {
 
       <button
         type="submit"
+        disabled={loginMutation.isPending}
         className="py-2 px-4 bg-accent hover:bg-accent-hover text-white font-semibold rounded transition-colors cursor-pointer"
       >
-        Log in
+        {loginMutation.isPending ? "Logging in..." : "Log in"}
       </button>
+
+      {loginMutation.isError && (
+        <p className="text-red-500">Failed to log in</p>
+      )}
     </form>
-  )
+  );
 }
 
-export default LoginForm
+export default LoginForm;

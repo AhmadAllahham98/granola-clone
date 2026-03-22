@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { motion } from 'motion/react'
 import LoginForm from './LoginForm.tsx'
 import RegisterForm from './RegisterForm.tsx'
 
@@ -8,7 +9,13 @@ type Props = {
 
 function AuthPage({ mode }: Props) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -15 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="min-h-screen flex items-center justify-center bg-bg"
+    >
       <div className="w-full max-w-md p-8 bg-surface border border-border rounded-xl">
 
         <h1 className="text-2xl font-bold text-text mb-6">Granola Notes</h1>
@@ -23,7 +30,7 @@ function AuthPage({ mode }: Props) {
           )}
         </p>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

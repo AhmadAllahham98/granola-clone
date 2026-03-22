@@ -72,6 +72,19 @@ app.use((req: Request, res: Response, next: NextFunction) => {
  * Goal: A "Catch-All" function that formats errors into nice JSON.
  */
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  // Intercept Zod Validation Errors
+  if (err.name === "ZodError") {
+    res.status(400).json({
+      status: "fail",
+      message: "Validation failed",
+      errors: (err.issues || err.errors || []).map((e: any) => ({
+        field: e.path ? e.path.join('.') : 'unknown',
+        message: e.message
+      }))
+    });
+    return;
+  }
+
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
 
