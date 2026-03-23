@@ -84,6 +84,7 @@ export class NoteService {
     // Hint: return prisma.note.findUnique({ where: { id } });
     return prisma.note.findUnique({
       where: { id },
+      include: { actionItems: true },
     });
   }
 
@@ -105,6 +106,32 @@ export class NoteService {
     // We must return the Promise so the controller can `await` it!
     return await prisma.note.delete({
       where: { id },
+    });
+  }
+
+  static async createActionItems(noteId: string, descriptions: string[]) {
+    const actionItemsData = descriptions.map((desc) => ({
+      noteId,
+      description: desc,
+    }));
+    await prisma.actionItem.createMany({
+      data: actionItemsData,
+    });
+    return prisma.actionItem.findMany({
+      where: { noteId },
+    });
+  }
+
+  static async updateActionItem(actionItemId: string, isCompleted: boolean) {
+    return prisma.actionItem.update({
+      where: { id: actionItemId },
+      data: { isCompleted },
+    });
+  }
+
+  static async deleteActionItem(actionItemId: string) {
+    return prisma.actionItem.delete({
+      where: { id: actionItemId },
     });
   }
 }

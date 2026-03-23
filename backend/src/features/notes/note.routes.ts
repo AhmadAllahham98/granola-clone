@@ -6,7 +6,10 @@ import {
   updateNote, 
   deleteNote,
   summarizeNote,
-  extractActionItems
+  extractActionItems,
+  createActionItems,
+  updateActionItem,
+  deleteActionItem
 } from "./note.controller.js";
 import { authenticate } from "../auth/auth.middleware.js";
 
@@ -32,5 +35,10 @@ router.delete("/:id", authenticate, deleteNote);
 // AI Routes
 router.get("/:id/summarize", authenticate, summarizeNote);
 router.get("/:id/action-items", authenticate, extractActionItems);
+
+// Action Items Routes
+router.post("/:id/action-items", authenticate, createActionItems);
+router.patch("/action-items/:id", authenticate, updateActionItem);
+router.delete("/action-items/:id", authenticate, deleteActionItem);
 
 export default router;

@@ -7,6 +7,15 @@ export type User = {
   email: string
 }
 
+export type ActionItem = {
+  id: string
+  noteId: string
+  description: string
+  isCompleted: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export type Note = {
   id: string
   title: string
@@ -14,6 +23,7 @@ export type Note = {
   createdAt: string   // ISO 8601 string, e.g. "2024-03-19T12:00:00Z"
   updatedAt: string
   userId: string
+  actionItems?: ActionItem[]
 }
 
 // Shape of the JSON body returned by POST /auth/login and POST /auth/register

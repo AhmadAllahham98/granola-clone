@@ -3,7 +3,7 @@
 // These functions are called by TanStack Query hooks (useQuery / useMutation).
 
 import { apiFetch } from './api.ts'
-import type { Note } from '../types/index.ts'
+import type { Note, ActionItem } from '../types/index.ts'
 
 interface ApiResponse<T> {
   status: string;
@@ -11,7 +11,12 @@ interface ApiResponse<T> {
 }
 
 interface PaginatedData<T> {
-  meta: any;
+  meta: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+  };
   data: T[];
 }
 
@@ -49,4 +54,20 @@ export async function updateNote(id: string, data: Partial<Pick<Note, 'title' | 
 // Returns void — nothing to parse from a 204 No Content response.
 export async function deleteNote(id: string): Promise<void> {
   await apiFetch<void>(`/api/notes/${id}`, { method: 'DELETE' })
+}
+
+// ─── ACTION ITEMS ─────────────────────────────────────────────────────────────
+
+export async function createActionItems(noteId: string, descriptions: string[]): Promise<ActionItem[]> {
+  const response = await apiFetch<ApiResponse<ActionItem[]>>(`/api/notes/${noteId}/action-items`, { method: 'POST', json: { descriptions } })
+  return response.data;
+}
+
+export async function updateActionItem(id: string, isCompleted: boolean): Promise<ActionItem> {
+  const response = await apiFetch<ApiResponse<ActionItem>>(`/api/notes/action-items/${id}`, { method: 'PATCH', json: { isCompleted } })
+  return response.data;
+}
+
+export async function deleteActionItem(id: string): Promise<void> {
+  await apiFetch<void>(`/api/notes/action-items/${id}`, { method: 'DELETE' })
 }

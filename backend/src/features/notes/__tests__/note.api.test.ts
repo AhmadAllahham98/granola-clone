@@ -26,6 +26,9 @@ vi.mock("../note.service.js", () => {
       getNoteById: vi.fn(),
       updateNote: vi.fn(),
       deleteNote: vi.fn(),
+      createActionItems: vi.fn(),
+      updateActionItem: vi.fn(),
+      deleteActionItem: vi.fn(),
     },
   };
 });
@@ -260,6 +263,63 @@ describe("Notes API Integration Tests", () => {
       expect(response.text).toContain('data: "- Action X"\n\n');
       expect(response.text).toContain("data: [DONE]\n\n");
       expect(openai.responses.create).toHaveBeenCalled();
+    });
+  });
+
+  describe("POST /api/notes/:id/action-items", () => {
+    it("should create action items", async () => {
+      const mockActionItems = [{ id: "f0836797-2640-4b89-81fa-a430e2c74c81", description: "Task 1", isCompleted: false, noteId: "d0836797-2640-4b89-81fa-a430e2c74c81" }];
+      vi.mocked(NoteService.createActionItems).mockResolvedValue(mockActionItems as any);
+
+      const response = await request(app)
+        .post("/api/notes/d0836797-2640-4b89-81fa-a430e2c74c81/action-items")
+        .set("Authorization", authHeader)
+        .send({ descriptions: ["Task 1"] });
+
+      expect(response.status).toBe(201);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data).toHaveLength(1);
+      expect(NoteService.createActionItems).toHaveBeenCalledWith("d0836797-2640-4b89-81fa-a430e2c74c81", ["Task 1"]);
+    });
+
+    it("should return 400 if validation fails", async () => {
+      const response = await request(app)
+        .post("/api/notes/d0836797-2640-4b89-81fa-a430e2c74c81/action-items")
+        .set("Authorization", authHeader)
+        .send({ descriptions: [] }); // Empty array fails min(1) validation
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe("PATCH /api/notes/action-items/:id", () => {
+    it("should toggle the completion status of an action item", async () => {
+      const mockUpdatedItem = { id: "f0836797-2640-4b89-81fa-a430e2c74c81", description: "Task 1", isCompleted: true };
+      vi.mocked(NoteService.updateActionItem).mockResolvedValue(mockUpdatedItem as any);
+
+      const response = await request(app)
+        .patch("/api/notes/action-items/f0836797-2640-4b89-81fa-a430e2c74c81")
+        .set("Authorization", authHeader)
+        .send({ isCompleted: true });
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.isCompleted).toBe(true);
+      expect(NoteService.updateActionItem).toHaveBeenCalledWith("f0836797-2640-4b89-81fa-a430e2c74c81", true);
+    });
+  });
+
+  describe("DELETE /api/notes/action-items/:id", () => {
+    it("should delete an action item", async () => {
+      vi.mocked(NoteService.deleteActionItem).mockResolvedValue({ id: "f0836797-2640-4b89-81fa-a430e2c74c81" } as any);
+
+      const response = await request(app)
+        .delete("/api/notes/action-items/f0836797-2640-4b89-81fa-a430e2c74c81")
+        .set("Authorization", authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(NoteService.deleteActionItem).toHaveBeenCalledWith("f0836797-2640-4b89-81fa-a430e2c74c81");
     });
   });
 });

@@ -3,7 +3,7 @@
 // This keeps query keys and data-fetching logic in one place.
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getNotes, getNote, createNote, updateNote, deleteNote } from '../lib/notes.ts'
+import { getNotes, getNote, createNote, updateNote, deleteNote, createActionItems, updateActionItem, deleteActionItem } from '../lib/notes.ts'
 import type { Note } from '../types/index.ts'
 
 // ─── Query key factory ────────────────────────────────────────────────────────
@@ -94,6 +94,42 @@ export function useDeleteNote() {
     onSettled: () => {
       // Always refetch after error or success to make sure server and client are in sync
       queryClient.invalidateQueries({ queryKey: noteKeys.all })
+    },
+  })
+}
+
+// ─── ACTION ITEMS HOOKS ───────────────────────────────────────────────────────
+
+export function useCreateActionItems(noteId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (descriptions: string[]) => createActionItems(noteId, descriptions),
+    onSuccess: () => {
+      // Refresh the specific note to get the new action items
+      queryClient.invalidateQueries({ queryKey: noteKeys.detail(noteId) })
+    },
+  })
+}
+
+export function useUpdateActionItem(noteId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, isCompleted }: { id: string; isCompleted: boolean }) => updateActionItem(id, isCompleted),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.detail(noteId) })
+    },
+  })
+}
+
+export function useDeleteActionItem(noteId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => deleteActionItem(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.detail(noteId) })
     },
   })
 }

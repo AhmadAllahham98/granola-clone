@@ -25,6 +25,14 @@ const UpdateNoteSchema = z.object({
   isArchived: z.boolean().optional(),
 });
 
+const CreateActionItemsSchema = z.object({
+  descriptions: z.array(z.string()).min(1),
+});
+
+const UpdateActionItemSchema = z.object({
+  isCompleted: z.boolean(),
+});
+
 const UuidSchema = z.string().uuid("A valid UUID noteId is strictly required");
 
 export const createNote = async (
@@ -251,5 +259,62 @@ export const extractActionItems = async (
       res.write(`data: ${JSON.stringify(`\n[Error: ${errorMessage}]`)}\n\n`);
       res.end();
     }
+  }
+};
+
+export const createActionItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const noteId = UuidSchema.parse(req.params.id);
+    const validBody = CreateActionItemsSchema.parse(req.body);
+
+    const actionItems = await NoteService.createActionItems(noteId, validBody.descriptions);
+
+    res.status(201).json({
+      status: "success",
+      data: actionItems,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateActionItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const actionItemId = UuidSchema.parse(req.params.id);
+    const validBody = UpdateActionItemSchema.parse(req.body);
+
+    const updatedItem = await NoteService.updateActionItem(actionItemId, validBody.isCompleted);
+
+    res.status(200).json({
+      status: "success",
+      data: updatedItem,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteActionItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const actionItemId = UuidSchema.parse(req.params.id);
+    await NoteService.deleteActionItem(actionItemId);
+
+    res.status(200).json({
+      status: "success",
+    });
+  } catch (error) {
+    next(error);
   }
 };

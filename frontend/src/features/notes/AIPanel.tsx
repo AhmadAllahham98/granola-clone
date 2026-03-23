@@ -18,6 +18,7 @@
 
 import { useEffect, useState } from 'react'
 import { streamSummarize, streamActionItems } from '../../lib/ai'
+import { useCreateActionItems } from '../../hooks/useNotes'
 
 type Props = {
   noteId: string
@@ -58,6 +59,26 @@ function AIPanel({ noteId, mode, onClose }: Props) {
   }, [noteId, mode])
 
   const heading = mode === 'summarize' ? 'Summary' : 'Action Items'
+  const createActionItems = useCreateActionItems(noteId)
+
+  const handleSaveActionItems = () => {
+    // Basic markdown parsing for bullet points
+    const lines = output.split('\n');
+    const descriptions = lines
+      .map(line => line.trim())
+      .filter(line => line.startsWith('- ') || line.startsWith('* '))
+      .map(line => line.substring(2).trim());
+
+    if (descriptions.length > 0) {
+      createActionItems.mutate(descriptions, {
+        onSuccess: () => {
+          onClose();
+        }
+      });
+    } else {
+      alert("No action items found to save. Ensure they are bullet points (- or *).");
+    }
+  }
 
   return (
     // Slide in from right — fixed position over the editor panel
@@ -80,6 +101,19 @@ function AIPanel({ noteId, mode, onClose }: Props) {
         {isStreaming && <span className="text-accent animate-pulse">▌</span>}
         <p>{output}</p>
       </div>
+
+      {/* Action Items Footer */}
+      {mode === 'action-items' && !isStreaming && output.trim().length > 0 && (
+        <div className="p-5 border-t border-border bg-surface/50">
+          <button
+            onClick={handleSaveActionItems}
+            disabled={createActionItems.isPending}
+            className="w-full bg-accent text-surface rounded-lg py-2.5 font-medium hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors disabled:opacity-50"
+          >
+            {createActionItems.isPending ? 'Saving...' : 'Save as Action Items'}
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

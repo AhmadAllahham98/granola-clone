@@ -18,6 +18,7 @@ import { useDebounce } from "../../hooks/useDebounce.ts";
 import EditorToolbar from "./EditorToolbar.tsx";
 import MarkdownEditor from "./MarkdownEditor.tsx";
 import AIPanel from "./AIPanel.tsx";
+import ActionItemsList from "./ActionItemsList.tsx";
 
 function EditorPanel() {
   const { id } = useParams<{ id: string }>();
@@ -53,7 +54,7 @@ function EditorPanel() {
     if (debouncedContent === note.content && debouncedTitle === note.title)
       return;
     updateNote({ title: debouncedTitle, content: debouncedContent });
-  }, [debouncedContent, debouncedTitle]);
+  }, [debouncedContent, debouncedTitle, id, note, updateNote]);
 
   // ── Empty state ─────────────────────────────────────────────────────────────
   if (!id) {
@@ -68,6 +69,14 @@ function EditorPanel() {
     return (
       <div className="flex items-center justify-center h-full text-muted text-sm">
         Loading...
+      </div>
+    );
+  }
+
+  if (!note) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted text-sm">
+        Note not found.
       </div>
     );
   }
@@ -90,6 +99,9 @@ function EditorPanel() {
 
       <div className="flex-1 overflow-auto p-6">
         <MarkdownEditor value={content} onChange={setContent} />
+        {note?.actionItems && note.actionItems.length > 0 && (
+          <ActionItemsList noteId={id} items={note.actionItems} />
+        )}
       </div>
 
       {aiPanelOpen && (
