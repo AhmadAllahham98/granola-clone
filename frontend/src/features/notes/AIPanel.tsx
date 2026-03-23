@@ -17,6 +17,7 @@
 //   }, [noteId, mode])
 
 import { useEffect, useState } from 'react'
+import { streamSummarize, streamActionItems } from '../../lib/ai'
 
 type Props = {
   noteId: string
@@ -28,15 +29,32 @@ function AIPanel({ noteId, mode, onClose }: Props) {
   const [output, setOutput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
 
-  // Placeholder — replace on Day 12 with real streaming (see TODO above)
   useEffect(() => {
     setOutput('')
     setIsStreaming(true)
-    const timer = setTimeout(() => {
-      setOutput('[AI output will appear here — wire up lib/ai.ts on Day 12]')
-      setIsStreaming(false)
-    }, 500)
-    return () => clearTimeout(timer)
+    
+    // We should allow cancelling the stream if unmounted
+    let isCancelled = false;
+
+    const stream = async () => {
+      try {
+        const gen = mode === 'summarize' ? streamSummarize(noteId) : streamActionItems(noteId)
+        for await (const chunk of gen) {
+          if (isCancelled) break;
+          setOutput(prev => prev + chunk)
+        }
+      } catch {
+        if (!isCancelled) setOutput(prev => prev + '\n[Error: Connection failed]')
+      } finally {
+        if (!isCancelled) setIsStreaming(false)
+      }
+    }
+
+    stream()
+
+    return () => {
+      isCancelled = true;
+    }
   }, [noteId, mode])
 
   const heading = mode === 'summarize' ? 'Summary' : 'Action Items'

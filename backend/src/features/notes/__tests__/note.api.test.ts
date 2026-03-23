@@ -3,6 +3,19 @@ import request from "supertest";
 import app from "../../../server.js";
 import { NoteService } from "../note.service.js";
 import { generateToken } from "../../auth/auth.utils.js";
+import { openai } from "../../../utils/ai.js";
+
+// Mock openai
+vi.mock("../../../utils/ai.js", () => {
+  return {
+    openai: {
+      responses: {
+        create: vi.fn(),
+      },
+    },
+  };
+});
+
 
 // Mock the NoteService fully so we don't hit the real database
 vi.mock("../note.service.js", () => {
@@ -175,6 +188,78 @@ describe("Notes API Integration Tests", () => {
       expect(response.status).toBe(200);
       expect(response.body.status).toBe("success");
       expect(NoteService.deleteNote).toHaveBeenCalledWith("d0836797-2640-4b89-81fa-a430e2c74c81");
+    });
+  });
+
+  describe("GET /api/notes/:id/summarize", () => {
+    it("should return 404 if note not found", async () => {
+      vi.mocked(NoteService.getNoteById).mockResolvedValue(null as any);
+      const response = await request(app)
+        .get("/api/notes/00000000-0000-0000-0000-000000000000/summarize")
+        .set("Authorization", authHeader);
+      
+      expect(response.status).toBe(404);
+    });
+
+    it("should stream the summarized note", async () => {
+      const mockNote = {
+        id: "d0836797-2640-4b89-81fa-a430e2c74c81",
+        title: "Test Note",
+        content: "Details regarding X",
+      };
+      vi.mocked(NoteService.getNoteById).mockResolvedValue(mockNote as any);
+
+      async function* mockStream() {
+        yield { type: "response.output_text.delta", delta: "Summary" };
+        yield { type: "response.output_text.delta", delta: " text" };
+      }
+      vi.mocked(openai.responses.create).mockResolvedValue(mockStream() as any);
+
+      const response = await request(app)
+        .get("/api/notes/d0836797-2640-4b89-81fa-a430e2c74c81/summarize")
+        .set("Authorization", authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.headers["content-type"]).toContain("text/event-stream");
+      expect(response.text).toContain('data: "Summary"\n\n');
+      expect(response.text).toContain('data: " text"\n\n');
+      expect(response.text).toContain("data: [DONE]\n\n");
+      expect(openai.responses.create).toHaveBeenCalled();
+    });
+  });
+
+  describe("GET /api/notes/:id/action-items", () => {
+    it("should return 404 if note not found", async () => {
+      vi.mocked(NoteService.getNoteById).mockResolvedValue(null as any);
+      const response = await request(app)
+        .get("/api/notes/00000000-0000-0000-0000-000000000000/action-items")
+        .set("Authorization", authHeader);
+      
+      expect(response.status).toBe(404);
+    });
+
+    it("should stream action items", async () => {
+      const mockNote = {
+        id: "d0836797-2640-4b89-81fa-a430e2c74c81",
+        title: "Test Note",
+        content: "Will do X",
+      };
+      vi.mocked(NoteService.getNoteById).mockResolvedValue(mockNote as any);
+
+      async function* mockStream() {
+        yield { type: "response.output_text.delta", delta: "- Action X" };
+      }
+      vi.mocked(openai.responses.create).mockResolvedValue(mockStream() as any);
+
+      const response = await request(app)
+        .get("/api/notes/d0836797-2640-4b89-81fa-a430e2c74c81/action-items")
+        .set("Authorization", authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.headers["content-type"]).toContain("text/event-stream");
+      expect(response.text).toContain('data: "- Action X"\n\n');
+      expect(response.text).toContain("data: [DONE]\n\n");
+      expect(openai.responses.create).toHaveBeenCalled();
     });
   });
 });

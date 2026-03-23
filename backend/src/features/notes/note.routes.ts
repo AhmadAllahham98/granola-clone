@@ -4,7 +4,9 @@ import {
   createNote, 
   getNoteById, 
   updateNote, 
-  deleteNote 
+  deleteNote,
+  summarizeNote,
+  extractActionItems
 } from "./note.controller.js";
 import { authenticate } from "../auth/auth.middleware.js";
 
@@ -26,5 +28,9 @@ router.patch("/:id", authenticate, updateNote);
 
 // DELETE /:id -> deleteNote
 router.delete("/:id", authenticate, deleteNote);
+
+// AI Routes
+router.get("/:id/summarize", authenticate, summarizeNote);
+router.get("/:id/action-items", authenticate, extractActionItems);
 
 export default router;

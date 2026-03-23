@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { NoteService } from "./note.service.js"; // Import the service
 import { ApiError } from "../../utils/apiError.js";
 import { z } from "zod";
+import { openai } from "../../utils/ai.js";
 
 const GetNotesQuerySchema = z.object({
   page: z.coerce.number().min(1).optional().default(1),
@@ -154,5 +155,101 @@ export const deleteNote = async (
     });
   } catch (error) {
     next(error);
+  }
+};
+
+export const summarizeNote = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const noteId = UuidSchema.parse(req.params.id);
+    const note = await NoteService.getNoteById(noteId);
+
+    if (!note) {
+      throw new ApiError(404, "note not found");
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const stream = await openai.responses.create({
+      model: "gpt-4o",
+      stream: true,
+      instructions: "You are an AI assistant. Provide a concise, well-structured summary of these meeting notes.",
+      input: `Title: ${note.title}\n\nContent: ${note.content || ""}`
+    });
+
+    for await (const chunk of stream) {
+      if (chunk.type === "response.output_text.delta") {
+        const content = chunk.delta;
+        if (content) {
+          res.write(`data: ${JSON.stringify(content)}\n\n`);
+        }
+      }
+    }
+    
+    res.write("data: [DONE]\n\n");
+    res.end();
+  } catch (error: any) {
+    console.error("Error in summarizeNote:", error);
+    if (!res.headersSent) {
+      next(error);
+    } else {
+      const errorMessage = error?.message || "Internal server error during streaming.";
+      res.write(`data: ${JSON.stringify(`\n[Error: ${errorMessage}]`)}\n\n`);
+      res.end();
+    }
+  }
+};
+
+export const extractActionItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const noteId = UuidSchema.parse(req.params.id);
+    const note = await NoteService.getNoteById(noteId);
+
+    if (!note) {
+      throw new ApiError(404, "note not found");
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const stream = await openai.responses.create({
+      model: "gpt-4o",
+      stream: true,
+      instructions: "You are an AI assistant. Extract clear, actionable items from the given meeting notes. Present them as a bulleted checklist.",
+      input: `Title: ${note.title}\n\nContent: ${note.content || ""}`
+    });
+
+    for await (const chunk of stream) {
+      if (chunk.type === "response.output_text.delta") {
+        const content = chunk.delta;
+        if (content) {
+          res.write(`data: ${JSON.stringify(content)}\n\n`);
+        }
+      }
+    }
+    
+    res.write("data: [DONE]\n\n");
+    res.end();
+  } catch (error: any) {
+    console.error("Error in extractActionItems:", error);
+    if (!res.headersSent) {
+      next(error);
+    } else {
+      const errorMessage = error?.message || "Internal server error during streaming.";
+      res.write(`data: ${JSON.stringify(`\n[Error: ${errorMessage}]`)}\n\n`);
+      res.end();
+    }
   }
 };

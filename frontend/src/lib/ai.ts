@@ -1,16 +1,9 @@
 // ─── AI API calls ─────────────────────────────────────────────────────────────
 // These use Server-Sent Events (SSE) for streaming responses from the backend.
 // The backend will stream text chunks as they arrive from the LLM.
-//
-// Usage pattern:
-//   const stream = streamSummarize(noteId)
-//   for await (const chunk of stream) {
-//     setOutput(prev => prev + chunk)
-//   }
-//
-// TODO (Day 12): Implement these when you add the LLM backend routes.
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+// Ensure we match the backend proxy/prefixed route, which usually includes /api
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 const TOKEN_KEY = 'granola_token'
 
 // ─── Shared SSE streaming helper ──────────────────────────────────────────────
@@ -25,6 +18,19 @@ async function* streamFromSSE(path: string): AsyncGenerator<string> {
     },
   })
 
+  if (!response.ok) {
+    let errorMsg = `Server error: ${response.status} ${response.statusText}`
+    try {
+      const errorJson = await response.json()
+      if (errorJson?.message) {
+        errorMsg = errorJson.message
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(errorMsg)
+  }
+
   if (!response.body) throw new Error('No response body')
 
   const reader = response.body.getReader()
@@ -36,22 +42,34 @@ async function* streamFromSSE(path: string): AsyncGenerator<string> {
 
     const text = decoder.decode(value, { stream: true })
 
-    // SSE format: lines starting with "data: " contain the actual chunk
+    // SSE format: blocks separated by \n\n, lines start with "data: "
     for (const line of text.split('\n')) {
       if (line.startsWith('data: ')) {
-        const chunk = line.slice('data: '.length)
-        if (chunk !== '[DONE]') yield chunk
+        const chunk = line.slice('data: '.length).trim()
+        if (chunk === '[DONE]') {
+          return
+        }
+        
+        if (chunk) {
+          try {
+            // Backend sends JSON-encoded strings to handle newlines correctly
+            yield JSON.parse(chunk)
+          } catch {
+            // fallback if it's not JSON
+            yield chunk
+          }
+        }
       }
     }
   }
 }
 
-// ─── GET /notes/:id/summarize (SSE) ──────────────────────────────────────────
+// ─── GET /api/notes/:id/summarize (SSE) ──────────────────────────────────────────
 export function streamSummarize(noteId: string): AsyncGenerator<string> {
-  return streamFromSSE(`/notes/${noteId}/summarize`)
+  return streamFromSSE(`/api/notes/${noteId}/summarize`)
 }
 
-// ─── GET /notes/:id/action-items (SSE) ───────────────────────────────────────
+// ─── GET /api/notes/:id/action-items (SSE) ───────────────────────────────────────
 export function streamActionItems(noteId: string): AsyncGenerator<string> {
-  return streamFromSSE(`/notes/${noteId}/action-items`)
+  return streamFromSSE(`/api/notes/${noteId}/action-items`)
 }
